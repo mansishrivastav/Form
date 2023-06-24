@@ -1,148 +1,192 @@
-import React from 'react'
-import "../App.css"
-import { Formik, Form, Field, ErrorMessage} from "formik";
-import * as Yup from "yup";
+import React, { useState } from "react";
+import "../App.css";
+import { useNavigate } from "react-router-dom";
 
-import { useNavigate } from 'react-router-dom';
+const NewForm = ({ isEdit, userFormData, index }) => {
+  const { name, email, phone, comment, password, confirmPassword } =
+    userFormData;
+  const [editName, setEditName] = useState(name);
+  const [editEmail, setEditEmail] = useState(email);
+  const [editPhone, setEditPhone] = useState(phone);
+  const [editComment, setEditComment] = useState(comment);
+  const [editPassword, setEditPassword] = useState(password);
+  const [editConfirmPassword, setEditConfirmPassword] =
+    useState(confirmPassword);
+  const [errors, setErrors] = useState({});
 
+  const navigate = useNavigate();
 
-const NewForm= ({onSubmit}) => {
-  const navigate=useNavigate()
-    const validationSchema= Yup.object({
-        name:Yup.string().min(2).max(25).required("Please enter your name"),
-        email:Yup.string().email().required("Please enter your email-address"),
-        phone:Yup.number().min(1000000000, "Not a valid phone-no.").max(9999999999, "Not a valid phone-no.").required("Please enter your phone-no."),
-        gender: Yup.string().required("Please select your gender"),
-        comment:Yup.string(),
-        password: Yup.string().matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-        "Password must contain at least 8 characters, including one uppercase letter, one lowercase letter, one number, and one special character"
-      ).min(6).max(20).required("Please enter your password"),
-        confirmPassword:Yup.string().oneOf([Yup.ref("password"),null], "Password must match").required("Please confirm your password"),
-      })
-    
-  
-  
-  const handleSubmit=(values)=>{
-  onSubmit(values)
-  navigate('/saved');}
+  const validateForm = () => {
+    const errors = {};
+
+    if (!editName) {
+      errors.name = "Name is required";
+    }
+
+    if (!editEmail) {
+      errors.email = "Email is required";
+    } else if (!validateEmail(editEmail)) {
+      errors.email = "Invalid email";
+    }
+
+    if (!editPhone) {
+      errors.phone = "Phone number is required";
+    }
+
+    if (!editPassword) {
+      errors.password = "Password is required";
+    }
+
+    if (editPassword !== editConfirmPassword) {
+      errors.confirmPassword = "Passwords must match";
+    }
+
+    return errors;
+  };
+
+  const validateEmail = (email) => {
+   
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const formErrors = validateForm();
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      return;
+    }
+
+    const formSubmittedData = {
+      name: editName,
+      email: editEmail,
+      phone: editPhone,
+      comment: editComment,
+      password: editPassword,
+      confirmPassword: editConfirmPassword,
+    };
+
+    if (isEdit) {
+      const formData = JSON.parse(localStorage.getItem("FORM_DATA"));
+      formData[index] = formSubmittedData;
+      localStorage.setItem("FORM_DATA", JSON.stringify(formData));
+    } else {
+      // Handle creation of a new user
+      const formData = localStorage.getItem("FORM_DATA");
+      const ID = localStorage.getItem("uniqueId");
+      if (!ID) {
+        localStorage.setItem("uniqueId", "1");
+        formSubmittedData.id = 1;
+      } else {
+        const id = +ID + 1;
+        formSubmittedData.id = id;
+        localStorage.setItem("uniqueId", id);
+      }
+      if (!formData) {
+        const data = JSON.stringify([formSubmittedData]);
+        localStorage.setItem("FORM_DATA", data);
+      } else {
+        const data = JSON.parse(formData);
+        const newData = [formSubmittedData, ...data];
+        localStorage.setItem("FORM_DATA", JSON.stringify(newData));
+      }
+    }
+
+    navigate("/saved");
+  };
+
   return (
     <div className="App">
-      <Formik initialValues={{name:"", email:"", phone:" ", gender:"", comment :"", password:"", confirmPassword:""} }  validationSchema={validationSchema}
-        onSubmit={handleSubmit}>
-      <Form>
-      <div className="mb-3">
-        <label className="form-label">Name</label>
-        <Field
-        name="name"
-          type="text"
-          className="form-control"
-          id="exampleFormControlInput1"
-          placeholder="Name"
-        />
-        <ErrorMessage name="name" component="div" className="error" />
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Email address</label>
-        <Field
-        name="email" 
-          type="email"
-          className="form-control"
-          id="exampleFormControlInput1"
-          placeholder="name@example.com"
-        />
-        <ErrorMessage name="email" component="div" className="error" />
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Phone</label>
-        <Field
-        name="phone"
-          type="number"
-          className="form-control"
-          id="exampleFormControlInput1"
-          placeholder="01234"
-        />
-        <ErrorMessage name="phone" component="div" className="error" />
-      </div>
-      <label className="form-label">Gender</label>
-      <div className="mb-3">
-      <div className="form-check form-check-inline">         
-        <Field
-        name="gender"
-          className="form-check-input"
-          type="radio"
-        
-          id="inlineRadio1"
-          value="Male"
-        />
-        <label className="form-check-label" htmlFor="inlineRadio1">
-          Male
-        </label>
-      </div>
-      <div className="form-check form-check-inline">
-        <Field
-        name="gender"
-          className="form-check-input"
-          type="radio"
-          
-          id="inlineRadio2"
-          value="Female"
-        />
-        <label className="form-check-label" htmlFor="inlineRadios2">
-        Female
-        </label></div>
-        <div className="form-check form-check-inline">         
-        <Field
-        name="gender"
-          className="form-check-input"
-          type="radio"
-        
-          id="inlineRadio1"
-          value="Prefer not to say"
-        />
-        <label className="form-check-label" htmlFor="inlineRadio1">
-          Prefer not to say
-        </label>
-      </div>
-      <ErrorMessage name="gender" component="div" className="error" />
-      </div>
-      
-      <div className="form-group">
-  <label htmlFor="floatingPassword">Password</label>
-  <Field
-    name="password"
-    type="password"
-    className="form-control"
-    id="floatingPassword"
-    placeholder="Password"
-  />
-  <ErrorMessage name="password" component="div" className="error" />
-</div>
-<div className="form-group">
-  <label htmlFor="floatingPassword">Confirm Password</label>
-  <Field
-    name="confirmPassword"
-    type="password"
-    className="form-control"
-    id="floatingPassword"
-    placeholder="Confirm Password"
-  />
-   <ErrorMessage name="confirmPassword" component="div" className="error" />
-</div>
-
-      <div> 
-      <div className="mb-3">
-  <label htmlFor="exampleFormControlTextarea1" className="form-label">Comment</label>
-  <Field name="comment" as="textarea" className="form-control" id="exampleFormControlTextarea1" rows="5"></Field>
-  <ErrorMessage name="comment" component="div" className="error" />
-</div>
-      <button type="submit" className="btn btn-primary" >Submit</button>
-      </div>      
-      </Form>
-      </Formik>
-      
+      <form className="form" onSubmit={handleSubmit}>
+        <div className="mb-3">
+          <input
+            name="name"
+            type="text"
+            className="form-control"
+            placeholder="Name"
+            onChange={(e) => {
+              setEditName(e.target.value);
+            }}
+            value={editName}
+          />
+          {errors.name && <div className="error">{errors.name}</div>}
+        </div>
+        <div className="mb-3">
+          <input
+            name="email"
+            type="email"
+            className="form-control"
+            placeholder="name@example.com"
+            onChange={(e) => {
+              setEditEmail(e.target.value);
+            }}
+            value={editEmail}
+          />
+          {errors.email && <div className="error">{errors.email}</div>}
+        </div>
+        <div className="mb-3">
+          <input
+            name="phone"
+            type="number"
+            className="form-control"
+            placeholder="01234"
+            onChange={(e) => {
+              setEditPhone(e.target.value);
+            }}
+            value={editPhone}
+          />
+          {errors.phone && <div className="error">{errors.phone}</div>}
+        </div>
+        <div className="form-group">
+          <input
+            name="password"
+            type="password"
+            className="form-control"
+            placeholder="Password"
+            onChange={(e) => {
+              setEditPassword(e.target.value);
+            }}
+            value={editPassword}
+          />
+          {errors.password && <div className="error">{errors.password}</div>}
+        </div>
+        <div className="form-group">
+          <input
+            name="confirmPassword"
+            type="password"
+            className="form-control"
+            placeholder="Confirm Password"
+            onChange={(e) => {
+              setEditConfirmPassword(e.target.value);
+            }}
+            value={editConfirmPassword}
+          />
+          {errors.confirmPassword && (
+            <div className="error">{errors.confirmPassword}</div>
+          )}
+        </div>
+        <div>
+          <div className="mb-3">
+            <textarea
+              name="comment"
+              className="form-control"
+              rows="5"
+              placeholder="Comments"
+              onChange={(e) => {
+                setEditComment(e.target.value);
+              }}
+              value={editComment}
+            ></textarea>
+          </div>
+          <button type="submit" className="btn btn-primary submit">
+            Submit
+          </button>
+        </div>
+      </form>
     </div>
+  );
+};
 
-  )
-}
-
-export default NewForm
+export default NewForm;
